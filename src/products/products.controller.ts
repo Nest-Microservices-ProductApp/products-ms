@@ -36,7 +36,9 @@ export class ProductsController {
 
   // @Delete('delete/:id')
   @MessagePattern({ cmd: 'delete-product' })
-  remove(@Param('id', ParseIntPipe) id: number) {
+  remove(@Payload('id', ParseIntPipe) id: number) {
+    console.log(id);
+    
     return this.productsService.remove(id);
   }
 }
