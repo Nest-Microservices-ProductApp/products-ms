@@ -1,9 +1,4 @@
-import {
-  HttpStatus,
-  Injectable,
-  Logger,
-  OnModuleInit,
-} from '@nestjs/common';
+import { HttpStatus, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { RpcException } from '@nestjs/microservices';
 
@@ -27,16 +22,16 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
 
   async findAll(paginationDto: PaginationDto) {
     const { page, limit } = paginationDto;
-    const totalPage = await this.product.count({where: {available:true}});
+    const totalPage = await this.product.count({ where: { available: true } });
     const lastPage = Math.ceil(totalPage / limit);
 
     return {
       data: await this.product.findMany({
         skip: (page - 1) * limit,
         take: limit,
-        where:{
-          available:true
-        }
+        where: {
+          available: true,
+        },
       }),
       meta: {
         total: totalPage,
@@ -48,19 +43,21 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
   }
 
   async findOne(id: number) {
-    const product = await this.product.findFirst({ where: { id, available: true } });
+    const product = await this.product.findFirst({
+      where: { id, available: true },
+    });
 
-    if (!product) 
+    if (!product)
       throw new RpcException({
-        message: `Product with id #${ id } not found`,
-        status: HttpStatus.NOT_FOUND
+        message: `Product with id #${id} not found`,
+        status: HttpStatus.NOT_FOUND,
       });
 
     return product;
   }
 
   async update(id: number, updateProductDto: UpdateProductDto) {
-    const { id: __, ...data } = updateProductDto
+    const { id: __, ...data } = updateProductDto;
     await this.findOne(id);
     return await this.product.update({
       where: { id },
@@ -77,5 +74,25 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
       },
     });
     return product;
+  }
+  async validateProducts(ids: number[]) {
+    ids = Array.from(new Set(ids));
+    const products = await this.product.findMany({
+      where: {
+        id: {
+          in: ids,
+        },
+      },
+    });
+    console.log(products.length ,"<---->", ids.length);
+    
+    if (products.length !== ids.length) {
+      throw new RpcException({
+        message: 'Some products were not found',
+        status: HttpStatus.BAD_REQUEST,
+      });
+    }
+
+    return products;
   }
 }
